@@ -506,7 +506,7 @@ end
       end
    end
 
-    fun{Sum A B}%Renvoie une liste de sommes éléments par éléments
+    fun{Sum A B}%Renvoie une liste de sommes éléments par éléments si les listes sont de meme tailles 
       local Tail in
                 fun{Tail A B Acc}
                     case A of nil then {Reverse Acc}
@@ -520,18 +520,18 @@ end
       end
    end
  
-   fun{Fill Gaps List}
+   fun{Fill Gaps List}           %% égalise deux listes en completant la plus courte par des 0.0 
       local Tail in
                 fun{Tail Gaps List Acc}
                     if Gaps == 0 then {Append List {Reverse Acc}}
-                    else {Tail Gaps-1 List 0|Acc}
+                    else {Tail Gaps-1 List 0.0|Acc}
                     end
                 end
                 {Tail Gaps List nil}
       end
    end
  
-   fun{BigSum A B}
+   fun{BigSum A B}                                  %%Somme des listes élément par élément et allonge la liste la plus courte 
       local Diff = {Length A} - {Length B} in
                 if Diff == 0 then {Sum A B}
                 elseif Diff > 0 then {Sum A {Fill Diff B}}
@@ -541,18 +541,18 @@ end
    end
    
    fun{NoteToSample Note}
-      local TailNoteToSample in
-	 fun{TailNoteToSample Note Acc1 Acc2}
-	    case Note
-	    of [115 105 108 101 110 99 101] then
-	       if ({Length Acc1} < 44100) then
+      local TailNoteToSample in           
+	 fun{TailNoteToSample ExNote Acc1 Acc2}
+	    case ExNote
+	    of silence(duration:Duration) then
+	       if ({Length Acc1} < Duration*44100) then
 		  {TailNoteToSample Note 0|Acc1 Acc2}
 	       else
 		  Acc1
 	       end
-	    else
-	       if ({Length Acc1} <44100) then
-		  {TailNoteToSample Note (0.5*{Sin 2.0*3.14159265359*{GetFrequency Note}*(Acc2/44100.0)})|Acc1 Acc2+1.0}
+	    []note(name:Name octave:Octave sharp:Boolean duration:Duration instrument:none) then 
+	       if ({Length Acc1} <Duration*44100) then
+		  {TailNoteToSample Note (0.5*{Sin 2.0*3.14159265359*{GetFrequency Note}*(Acc2/44100.0)})|Acc1 Acc2+(1.0/{IntToFloat Duration})} %% gère le cas ou la duration est un entier quelconque. 
 	       else
 		  Acc1
 	       end
@@ -566,30 +566,43 @@ end
       ChordExtended = {ChordToExtended Chord}
       case ChordExtended
       of H|T then
-	 {Sum {NoteToSample H} {ChordToSample T}}
+	 {BigSum {NoteToSample H} {ChordToSample T}}
+      end
+   end
+
+   fun{Merge MusicsWithIntensities}   %% prends une liste de musique qui ont chacune une intensité associée renvoie la somme vectorielle pondérée par les intensités
+      local TailMerge in
+	 fun{TailMerge MusicsWithIntensities Acc}
+	    case MusicsWithIntensities of H|T then
+	    end
+	 end
       end
    end
    
-  
-   fun {ToSample Music}
-      local TailToSample in
-	 fun{TailToSample Music Acc}
-	    case Music 
-	    of nil then Acc
+	       
+   
+   
+   
+   fun {Mix P2T Music}
+      local TailMix in
+	 fun{TailMix P2T Music FinalList}
+	     case Music 
+	    of nil then {Reverse Acc}
 	    [] H|T then
 	       case H
 	       of samples(Samples) then
-		  {TailToSample T H|Acc}
+		  {TailMix T H|FinalList}
 	       []partition(Partition) then
-		  case {PartitionToTimedList Partition} %% A COMPLETER
+		  case {P2T Partition}
 		  of H2|T2 then
 		     case H2 of X|Y then
-			{TailToSample T2 {ChordToSample H2}|Acc}
+			{TailMix T2 {Append {ChordToSample H2} Acc}}
 		     []note(name:Name octave:Octave sharp:Boolean duration:Duration instrument:none)
-			{TailToSample T2 {NoteToSample H2}|Acc}
+			{TailMix T2 {Append {NoteToSample H2} Acc}}
 		     end
-		  else Acc	
-	       []wave(FileName) then
+		  end
+	       []wave(FileName) then  %% à verif 
+		  {Project.load H.1}
 	       []merge(MusicWithIntensities) then
 	       []reverse(Music) then
 	       []repeat(amount:Natural Music) then
@@ -603,17 +616,7 @@ end
 	 end
       end
    end
-   
-   
-   
-   
-   
-   fun {Mix P2T Music}
-      local TailMix in
-	 fun{TailMix P2T Music}
-	 end
-      end
-   end
+
    
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
    
