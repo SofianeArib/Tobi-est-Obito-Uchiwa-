@@ -570,13 +570,25 @@ end
       end
    end
 
-   fun{Merge MusicsWithIntensities}   %% prends une liste de musique qui ont chacune une intensité associée renvoie la somme vectorielle pondérée par les intensités
-      local TailMerge in
-	 fun{TailMerge MusicsWithIntensities Acc}
-	    case MusicsWithIntensities of H|T then
-	    end
+  fun{Merge MusicsWithIntensities}   %% prends une liste de musique qui ont chacune une intensité associée renvoie la somme vectorielle pondérée par les intensités
+      case MusicsWithIntensities of H|T then
+	 case H of Int#Mus then
+	    {BigSum {Multiply {Mix P2T Mus} Int} {Merge T}}
 	 end
       end
+   end
+
+   
+  fun{MultiplyList L Factor}
+      local TailMultiplyList in
+	 fun{TailMultiplyList L Factor Acc}
+	    case L of nil then {Reverse Acc}
+	    [] H|T then
+	       {TailMultiplyList T Factor (Factor*H|Acc)}
+	    end
+	 end
+	 {TailMultiplyList L Factor nil}
+      end 
    end
    
 	       
