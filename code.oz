@@ -10,10 +10,8 @@ local NoteToExtended ChordToExtended NoteToExtendedWithTime ChordToExtendedWithT
       case Note
       of Name#Octave then
 	 note(name:Name octave:Octave sharp:true duration:1.0 instrument:none)
-      [] note(name:Name octave:Octave sharp:Boolean duration:Duration instrument:none) then %% Gere le cas ou on envoie deja une extended note 
-	 note(name:Name octave:Octave sharp:Boolean duration:Duration instrument:none)
-      []silence(duration:Duration) then  %% gere le cas ou on envoie deja un silence extended note 
-	 silence(duration:Duration)
+      [] note(name:Name octave:Octave sharp:Boolean duration:Duration instrument:none) then note(name:Name octave:Octave sharp:Boolean duration:Duration instrument:none)
+      [] silence(duration:Duration) then silence(duration:Duration)
       [] Atom then
 	 case {AtomToString Atom}
 	 of [115 105 108 101 110 99 101] then silence(duration:1.0) %Traduction de silence en String
@@ -28,24 +26,26 @@ local NoteToExtended ChordToExtended NoteToExtendedWithTime ChordToExtendedWithT
 	 end
       end
    end
-   
+
    fun{ChordToExtended Chord}
       local Tail in
 	 fun{Tail Chord Acc}
 	    case Chord
-	    of nil then Acc
+	    of nil then {Reverse Acc}
 	    [] H|T then
-	       {Tail T Acc|{NoteToExtended H}} %% gere donc aussi le cas ou on appelle sur un chord deja extended 
+	       {Tail T {NoteToExtended H}|Acc}
 	    end
 	 end
 	 {Tail Chord nil}
       end
    end
- 
+
    fun{NoteToExtendedWithTime Note Factor} %Note to extended note with duration:Factor for the note
       case Note
       of Name#Octave then
 	 note(name:Name octave:Octave sharp:true duration:Factor instrument:none)
+      []note(name:Name octave:Octave sharp:Boolean duration:Duration instrument:none) then note(name:Name octave:Octave sharp:Boolean duration:Duration*Factor instrument:none)
+      []silence(duration:Duration) then silence(duration:Duration*Factor)
       [] Atom then
 	 case {AtomToString Atom}
 	 of [115 105 108 101 110 99 101] then silence(duration:Factor) %Traduction de silence en String
@@ -60,25 +60,25 @@ local NoteToExtended ChordToExtended NoteToExtendedWithTime ChordToExtendedWithT
 	 end
       end
    end
- 
+
    fun{ChordToExtendedWithTime Chord Factor} %Chord to extended chord with duration:Factor for each note
       local Tail in
 	 fun{Tail Chord Factor Acc}
 	    case Chord
-	    of nil then Acc
+	    of nil then {Reverse Acc}
 	    [] H|T then
-	       {Tail T Factor Acc|{NoteToExtendedWithTime H Factor}}
+	       {Tail T Factor {NoteToExtendedWithTime H Factor}|Acc}
 	    end
 	 end
 	 {Tail Chord Factor nil}
       end
    end
- 
+
    fun{NoteToExtendedTransposedUp Note}
       local E Z in
 	 case Note
 	 of Name#Octave then
-	    if Name == g then note(name:a octave:Octave+1 sharp:false duration:1.0 instrument:none)
+	    if Name == g then note(name:a octave:Octave sharp:false duration:1.0 instrument:none)
 	    elseif Name == a then note(name:b octave:Octave sharp:false duration:1.0 instrument:none)
 	    elseif Name == c then note(name:d octave:Octave sharp:false duration:1.0 instrument:none)
 	    elseif Name == d then note(name:e octave:Octave sharp:false duration:1.0 instrument:none)
@@ -90,7 +90,7 @@ local NoteToExtended ChordToExtended NoteToExtendedWithTime ChordToExtendedWithT
 	    [] [S] then
 	       case {StringToAtom [S]}
 	       of a then note(name:a octave:4 sharp:true duration:1.0 instrument:none)
-	       [] b then note(name:c octave:4 sharp:false duration:1.0 instrument:none)
+	       [] b then note(name:c octave:5 sharp:false duration:1.0 instrument:none)
 	       [] c then note(name:c octave:4 sharp:true duration:1.0 instrument:none)
 	       [] d then note(name:d octave:4 sharp:true duration:1.0 instrument:none)
 	       [] e then note(name:f octave:4 sharp:false duration:1.0 instrument:none)
@@ -102,7 +102,7 @@ local NoteToExtended ChordToExtended NoteToExtendedWithTime ChordToExtendedWithT
 	       Z = {StringToInt [O]}
 	       case E
 	       of a then note(name:a octave:Z sharp:true duration:1.0 instrument:none)
-	       [] b then note(name:c octave:Z sharp:false duration:1.0 instrument:none)
+	       [] b then note(name:c octave:Z+1 sharp:false duration:1.0 instrument:none)
 	       [] c then note(name:c octave:Z sharp:true duration:1.0 instrument:none)
 	       [] d then note(name:d octave:Z sharp:true duration:1.0 instrument:none)
 	       [] e then note(name:f octave:Z sharp:false duration:1.0 instrument:none)
@@ -113,20 +113,20 @@ local NoteToExtended ChordToExtended NoteToExtendedWithTime ChordToExtendedWithT
 	 end
       end
    end
- 
+
    fun{ChordToExtendedTransposedUp Chord}
       local Tail in
 	 fun{Tail Chord Acc}
 	    case Chord
-	    of nil then Acc
+	    of nil then {Reverse Acc}
 	    [] H|T then
-	       {Tail T Acc|{NoteToExtendedTransposedUp H}}
+	       {Tail T {NoteToExtendedTransposedUp H}|Acc}
 	    end
 	 end
 	 {Tail Chord nil}
       end
    end
- 
+
    fun{NoteToExtendedTransposedDown Note}
       local E Z in
 	 case Note
@@ -142,9 +142,9 @@ local NoteToExtended ChordToExtended NoteToExtendedWithTime ChordToExtendedWithT
 	    of [115 105 108 101 110 99 101] then silence(duration:1.0) %Traduction de silence en String
 	    [] [S] then
 	       case {StringToAtom [S]}
-	       of a then note(name:g octave:3 sharp:true duration:1.0 instrument:none)
+	       of a then note(name:g octave:4 sharp:true duration:1.0 instrument:none)
 	       [] b then note(name:a octave:4 sharp:true duration:1.0 instrument:none)
-	       [] c then note(name:b octave:4 sharp:false duration:1.0 instrument:none)
+	       [] c then note(name:b octave:3 sharp:false duration:1.0 instrument:none)
 	       [] d then note(name:c octave:4 sharp:true duration:1.0 instrument:none)
 	       [] e then note(name:d octave:4 sharp:true duration:1.0 instrument:none)
 	       [] f then note(name:e octave:4 sharp:false duration:1.0 instrument:none)
@@ -154,32 +154,33 @@ local NoteToExtended ChordToExtended NoteToExtendedWithTime ChordToExtendedWithT
 	       E = {StringToAtom [N]}
 	       Z = {StringToInt [O]}
 	       case E
-	       of a then note(name:g octave:Z-1 sharp:true duration:1.0 instrument:none)
+	       of a then note(name:g octave:Z sharp:true duration:1.0 instrument:none)
 	       [] b then note(name:a octave:Z sharp:true duration:1.0 instrument:none)
-	       [] c then note(name:b octave:Z sharp:false duration:1.0 instrument:none)
+	       [] c then note(name:b octave:Z-1 sharp:false duration:1.0 instrument:none)
 	       [] d then note(name:c octave:Z sharp:true duration:1.0 instrument:none)
 	       [] e then note(name:d octave:Z sharp:true duration:1.0 instrument:none)
 	       [] f then note(name:e octave:Z sharp:false duration:1.0 instrument:none)
 	       else note(name:f octave:Z sharp:true duration:1.0 instrument:none)
 	       end
 	    end
+	 []silence then silence(duration:1.0)
 	 end
       end
    end
- 
+
    fun{ChordToExtendedTransposedDown Chord}
       local Tail in
 	 fun{Tail Chord Acc}
 	    case Chord
-	    of nil then Acc
+	    of nil then {Reverse Acc}
 	    [] H|T then
-	       {Tail T Acc|{NoteToExtendedTransposedDown H}}
+	       {Tail T {NoteToExtendedTransposedDown H}|Acc}
 	    end
 	 end
 	 {Tail Chord nil}
       end
    end
- 
+
    fun{TransposeExtendedNoteUp ExtendedNote}
       case ExtendedNote
       of note(name:Name octave:Octave sharp:Boolean duration:Duration instrument:none) then
@@ -200,11 +201,11 @@ local NoteToExtended ChordToExtended NoteToExtendedWithTime ChordToExtendedWithT
 	    else note(name:g octave:Octave sharp:true duration:Duration instrument:none)
 	    end
 	 end
-      else
-	 ExtendedNote
+      []silence(duration:Duration) then silence(duration:Duration)
+      else ExtendedNote
       end
    end
- 
+
    fun{TransposeExtendedNoteDown ExtendedNote}
       case ExtendedNote
       of note(name:Name octave:Octave sharp:Boolean duration:Duration instrument:none) then
@@ -216,86 +217,94 @@ local NoteToExtended ChordToExtended NoteToExtendedWithTime ChordToExtendedWithT
 	    else note(name:f octave:Octave sharp:false duration:Duration instrument:none)
 	    end
 	 else
-	    if Name == a then note(name:g octave:Octave-1 sharp:true duration:Duration instrument:none)
+	    if Name == a then note(name:g octave:Octave sharp:true duration:Duration instrument:none)
 	    elseif Name == b then note(name:a octave:Octave sharp:true duration:Duration instrument:none)
-	    elseif Name == c then note(name:b octave:Octave sharp:false duration:Duration instrument:none)
+	    elseif Name == c then note(name:b octave:Octave-1 sharp:false duration:Duration instrument:none)
 	    elseif Name == d then note(name:c octave:Octave sharp:true duration:Duration instrument:none)
 	    elseif Name == e then note(name:d octave:Octave sharp:true duration:Duration instrument:none)
 	    elseif Name == f then note(name:e octave:Octave sharp:false duration:Duration instrument:none)
 	    else note(name:f octave:Octave sharp:true duration:Duration instrument:none)
 	    end
 	 end
-      else
-	 ExtendedNote
+      []silence(duration:Duration) then silence(duration:Duration)
+      else ExtendedNote
       end
    end
- 
+
    fun{ShiftUp Partition}
       local TailShiftUp in
 	 fun{TailShiftUp Partition Acc}
 	    case Partition
-	    of nil then Acc
+	    of nil then {Reverse Acc} 
 	    [] H|T then
 	       case H
 	       of Note|Chord then
 		  case Note
 		  of note(name:Name octave:Octave sharp:Boolean duration:Duration instrument:none) then
-		     {TailShiftUp T Acc|{TailShiftUp Chord Acc|{TransposeExtendedNoteUp Note}}}
+		     {TailShiftUp T {TailShiftUp Chord {TransposeExtendedNoteUp Note}}|Acc}
+		  []silence(duration:Duration) then
+		     {TailShiftUp T {TailShiftUp Chord {TransposeExtendedNoteUp Note}}|Acc}
 		  else
-		     {TailShiftUp T Acc|{ChordToExtendedTransposedUp H}}
+		     {TailShiftUp T {ChordToExtendedTransposedUp H}|Acc}
 		  end
+	       []silence(duration:Duration) then
+		  {TailShiftUp T {TransposeExtendedNoteUp H}|Acc}
 	       []note(name:Name octave:Octave sharp:Boolean duration:Duration instrument:none) then
-		  {TailShiftUp T Acc|{TransposeExtendedNoteUp H}}
+		  {TailShiftUp T {TransposeExtendedNoteUp H}|Acc}
 	       []duration(seconds:DurationBis PartitionBis) then
-		  {TailShiftUp T Acc|{SetDuration DurationBis PartitionBis}}
+		  {TailShiftUp T {Append {ShiftUp {Reverse {SetDuration DurationBis PartitionBis}}} Acc}}
 	       []stretch(factor:FactorBis PartitionBis) then
-		  {TailShiftUp T Acc|{SetStretch FactorBis PartitionBis}}
-	       []drone(note:NoteOrChord amount:Amount) then
-		  {TailShiftUp T Acc|{SetDrone NoteOrChord Amount}}
+		  {TailShiftUp T {Append {ShiftUp {Reverse {SetStretch FactorBis PartitionBis}}} Acc}}
+	       []drone(note:NoteOrChord amount:Amount) then 
+		  {TailShiftUp T {Append {ShiftUp {Reverse {SetDrone NoteOrChord Amount}}} Acc}}
 	       []transpose(semitones:Integer PartitionBis) then
-		  {TailShiftUp T Acc|{SetTranspose Integer PartitionBis}}
+		  {TailShiftUp T {Append {ShiftUp {Reverse {SetTranspose Integer PartitionBis}}} Acc}}
 	       else
-		  {TailShiftUp T Acc|{NoteToExtendedTransposedUp H}}
+		  {TailShiftUp T {NoteToExtendedTransposedUp H}|Acc}
 	       end
 	    end
 	 end
 	 {TailShiftUp Partition nil}
       end
    end
- 
+
    fun{ShiftDown Partition}
       local TailShiftDown in
 	 fun{TailShiftDown Partition Acc}
 	    case Partition
-	    of nil then Acc
+	    of nil then {Reverse Acc}
 	    [] H|T then
 	       case H
 	       of Note|Chord then
 		  case Note
 		  of note(name:Name octave:Octave sharp:Boolean duration:Duration instrument:none) then
-		     {TailShiftDown T Acc|{TailShiftDown Chord Acc|{TransposeExtendedNoteDown Note}}}
+		     {TailShiftDown T {TailShiftDown Chord {TransposeExtendedNoteDown Note}|Acc}|Acc}
+		  []silence(duration:Duration) then
+		     {TailShiftDown T {TailShiftDown Chord {TransposeExtendedNoteDown Note}|Acc}|Acc}
 		  else
-		     {TailShiftDown T Acc|{ChordToExtendedTransposedDown H}}
+		     {TailShiftDown T {ChordToExtendedTransposedDown H}|Acc}
 		  end
+	       [] silence(duration:Duration) then
+		  {TailShiftDown T {TransposeExtendedNoteDown H}|Acc}
 	       []note(name:Name octave:Octave sharp:Boolean duration:Duration instrument:none) then
-		  {TailShiftDown T Acc|{TransposeExtendedNoteDown H}}
+		  {TailShiftDown T {TransposeExtendedNoteDown H}|Acc}
 	       []duration(seconds:DurationBis PartitionBis) then
-		  {TailShiftDown T Acc|{SetDuration DurationBis PartitionBis}}
+		  {TailShiftDown T {Append {ShiftDown {Reverse {SetDuration DurationBis PartitionBis}}} Acc}}
 	       []stretch(factor:FactorBis PartitionBis) then
-		  {TailShiftDown T Acc|{SetStretch FactorBis PartitionBis}}
-	       []drone(note:NoteOrChord amount:Amount) then
-		  {TailShiftDown T Acc|{SetDrone NoteOrChord Amount}}
+		  {TailShiftDown T {Append {ShiftDown {Reverse {SetStretch FactorBis PartitionBis}}} Acc}}
+	       []drone(note:NoteOrChord amount:Amount) then 
+		  {TailShiftDown T {Append {ShiftDown {Reverse {SetDrone NoteOrChord Amount}}} Acc}}
 	       []transpose(semitones:Integer PartitionBis) then
-		  {TailShiftDown T Acc|{SetTranspose Integer PartitionBis}}
+		  {TailShiftDown T {Append {ShiftDown {Reverse {SetTranspose Integer PartitionBis}}} Acc}}
 	       else
-		  {TailShiftDown T Acc|{NoteToExtendedTransposedDown H}}
+		  {TailShiftDown T {NoteToExtendedTransposedDown H}|Acc}
 	       end
 	    end
 	 end
 	 {TailShiftDown Partition nil}
       end
    end
- 
+
    fun {GetTime Partition}
       local TailGetTime in
 	 fun{TailGetTime Partition Acc}
@@ -306,143 +315,166 @@ local NoteToExtended ChordToExtended NoteToExtendedWithTime ChordToExtendedWithT
 	       of Note|Chord then %% Si H est une liste, c'est un Chord
 		  case Note
 		  of note(name:Name octave:Octave sharp:Boolean duration:Duration instrument:none) then
-		     {TailGetTime T Acc+(Duration)}
-		  [] Atom then %% si le premier element est un atom et non un record, on peut conclure que c'est un chord, pas un exchord
+		     {TailGetTime T Acc+Duration}
+		  []silence(duration:Duration) then
+		     {TailGetTime T Acc+Duration}
+		  else %% si le premier element est un atom et non un record, on peut conclure que c'est un chord, pas un exchord
 		     {TailGetTime T Acc+1.0}
 		  end
+	       [] silence(duration:Duration) then
+		  {TailGetTime T (Acc+Duration)}
 	       [] note(name:Name octave:Octave sharp:Boolean duration:Duration instrument:none) then
-		  {TailGetTime T Acc+(Duration)}
+		  {TailGetTime T (Acc+Duration)}
+	       []duration(seconds:DurationBis PartitionBis) then
+		  {TailGetTime T (Acc+DurationBis)}
+	       []stretch(factor:FactorBis PartitionBis) then
+		  {TailGetTime T (Acc+{GetTime PartitionBis}*{IntToFloat FactorBis})}
+	       []drone(note:NoteOrChord amount:Amount) then 
+		  {TailGetTime T Acc+{IntToFloat Amount}*{GetTime NoteOrChord}}
+	       []transpose(semitones:Integer PartitionBis) then
+		  {TailGetTime T (Acc+{GetTime PartitionBis})}
 	       else
 		  {TailGetTime T Acc+1.0}
 	       end
+	    else {TailGetTime Partition|nil 0.0}
 	    end
 	 end
 	 {TailGetTime Partition 0.0}
       end
    end
- 
+   
    fun{SetDuration Duration Partition}
       local TailSetDuration Factor in
 	 Factor = Duration/{GetTime Partition} %Durée d'une note ou d'un accord
 	 fun{TailSetDuration Duration Partition Acc}
 	    case Partition
-	    of nil then Acc %Renvoie la partition
+	    of nil then {Reverse Acc} %Renvoie la partition
 	    []H|T then
 	       case H
 	       of Note|Chord then %Si c'est une liste, c'est un Chord ou un extended chord
 		  case Note
 		  of note(name:Name octave:Octave sharp:Boolean duration:Duration instrument:none) then %Si c'est un extended chord
-		     {TailSetDuration Duration T Acc|{TailSetDuration Duration Chord Acc|note(name:Name octave:Octave sharp:Boolean duration:Duration*Factor instrument:none)}}
+		     {TailSetDuration Duration T {TailSetDuration Duration Chord note(name:Name octave:Octave sharp:Boolean duration:Duration*Factor instrument:none)|Acc}|Acc}
+		  []silence(duration:Duration) then
+		     {TailSetDuration Duration T {TailSetDuration Duration Chord silence(duration:Duration*Factor)|Acc}|Acc}
 		  else
-		     {TailSetDuration Duration T Acc|{ChordToExtendedWithTime H Factor}} % RÉFLECHIR À COMMENT RENVOYER UN EXTENDED CHORD ET PAS DES EXTENDED NOTES
+		     {TailSetDuration Duration T {ChordToExtendedWithTime H Factor}|Acc} % RÉFLECHIR À COMMENT RENVOYER UN EXTENDED CHORD ET PAS DES EXTENDED NOTES
 		  end
-	       [] note(name:Name octave:Octave sharp:Boolean duration:Duration instrument:none) then
-		  {TailSetDuration Duration T Acc|note(name:Name octave:Octave sharp:Boolean duration:Duration*Factor instrument:none)}
 	       []duration(seconds:DurationBis PartitionBis) then
-		  {TailSetDuration Duration T Acc|{SetDuration DurationBis PartitionBis}}
+		  {TailSetDuration Duration T {Append {Reverse {SetDuration Duration {SetDuration DurationBis PartitionBis}}} Acc}}
 	       []stretch(factor:FactorBis PartitionBis) then
-		  {TailSetDuration Duration T Acc|{SetStretch FactorBis PartitionBis}}
-	       []drone(note:NoteOrChord amount:Amount) then
-		  {TailSetDuration Duration T Acc|{SetDrone NoteOrChord Amount}}
+		  {TailSetDuration Duration T {Append {Reverse {SetStretch Factor {SetStretch FactorBis PartitionBis}}} Acc}}
+	       []drone(note:NoteOrChord amount:Amount) then 
+		  {TailSetDuration Duration T {Append {Reverse {SetStretch Factor {SetDrone NoteOrChord Amount}}} Acc}}
 	       []transpose(semitones:Integer PartitionBis) then
-		  {TailSetDuration Duration T Acc|{SetTranspose Integer PartitionBis}}
+		  {TailSetDuration Duration T {Append {Reverse {SetDuration Duration {SetTranspose Integer PartitionBis}}} Acc}}
 	       else
-		  {TailSetDuration Duration T Acc|{NoteToExtendedWithTime H Factor}}
+		  {TailSetDuration Duration T {NoteToExtendedWithTime H Factor}|Acc}
 	       end
 	    end
 	 end
 	 {TailSetDuration Duration Partition nil}
       end
    end
- 
+
    fun{SetStretch Factor Partition}
       local Duration NewDuration in
 	 Duration = {GetTime Partition}*Factor
 	 {SetDuration Duration Partition}
       end
    end
- 
-   fun{SetDrone NoteOrChord Amount}
-      local TailSetDrone in
-	 fun{TailSetDrone NoteOrChord Amount Acc}
-	    if Amount == 0 then Acc
+
+   fun{Copy Element Integer}
+      local Tail in
+	 fun{Tail Element Integer Acc}
+	    if Integer == 0 then {Reverse Acc}
 	    else
-	       case NoteOrChord
-	       of Note|Chord then
-		  case Note
-		  of note(name:Name octave:Octave sharp:Boolean duration:Duration instrument:none) then
-		     {TailSetDrone NoteOrChord Amount-1 Acc|NoteOrChord}
-		  else
-		     {TailSetDrone NoteOrChord Amount-1 Acc|{ChordToExtended NoteOrChord}}
-		  end
-	       []note(name:Name octave:Octave sharp:Boolean duration:Duration instrument:none) then
-		  {TailSetDrone NoteOrChord Amount-1 Acc|NoteOrChord}
-	       []duration(seconds:DurationBis PartitionBis) then
-		  {TailSetDrone NoteOrChord Amount-1 Acc|{SetDuration DurationBis PartitionBis}}
-	       []stretch(factor:FactorBis PartitionBis) then
-		  {TailSetDrone NoteOrChord Amount-1 Acc|{SetStretch FactorBis PartitionBis}}
-	       []drone(note:NoteOrChord amount:Amount) then
-		  {TailSetDrone NoteOrChord Amount-1 Acc|{SetDrone NoteOrChord Amount}}
-	       []transpose(semitones:Integer PartitionBis) then
-		  {TailSetDrone NoteOrChord Amount-1 Acc|{SetTranspose Integer PartitionBis}}
-	       else
-		  {TailSetDrone NoteOrChord Amount-1 Acc|{NoteToExtended NoteOrChord}}
-	       end
+	       {Tail Element Integer-1 Element|Acc}
 	    end
 	 end
-	 {TailSetDrone NoteOrChord Amount nil}
+	 {Tail Element Integer nil}
       end
    end
- 
-   fun{SetTranspose Integer Partition}
-      if Integer > 0 then
-	 {ShiftUp Partition}
-      else
-	 {ShiftDown Partition}
-      end
-   end
-end
-
- 
-  
+	    
    
- 
-  
- 
+   fun{SetDrone NoteOrChord Amount}
+      case NoteOrChord
+      of Note|Chord then
+	 case Note
+	 of note(name:Name octave:Octave sharp:Boolean duration:Duration instrument:none) then
+	    {Copy NoteOrChord Amount}
+	 []silence(duration:Duration) then
+	    {Copy NoteOrChord Amount}
+	 else
+	    {Copy {ChordToExtended NoteOrChord} Amount}
+	 end
+      []silence(duration:Duration) then
+	 {Copy NoteOrChord Amount}
+      []note(name:Name octave:Octave sharp:Boolean duration:Duration instrument:none) then
+	 {Copy NoteOrChord Amount}
+      []duration(seconds:DurationBis PartitionBis) then
+	 {Flatten {Copy {SetDuration DurationBis PartitionBis} Amount}}
+      []stretch(factor:FactorBis PartitionBis) then
+	 {Flatten {Copy {SetStretch FactorBis PartitionBis} Amount}}
+      []drone(note:NoteOrChord amount:AmountBis) then 
+	 {Flatten {Copy {SetDrone NoteOrChord AmountBis} Amount}}
+      []transpose(semitones:Integer PartitionBis) then
+	 {Flatten {Copy {SetTranspose Integer PartitionBis} Amount}}
+      else
+	 {Copy {NoteToExtended NoteOrChord} Amount}
+      end
+   end
+
+   fun{SetTranspose Integer Partition}
+      if Integer == 0 then Partition
+      elseif Integer >= 1 then {SetTranspose Integer-1 {ShiftUp Partition}}
+      else {SetTranspose Integer+1 {ShiftDown Partition}}
+      end
+   end
+   
+   
+
+   
+   
+
+   
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
- 
+
    fun {PartitionToTimedList Partition}
       local F Acc in
 	 fun{F Partition Acc}
 	    case Partition %Qu'est ce que la partition
-	    of nil then Acc %Si la liste est vide on renvoie notre accumulateur qui est
+	    of nil then {Reverse Acc} %Si la liste est vide on renvoie notre accumulateur qui est 
 	    [] H|T then %Dans le cas où c'est une liste d'extended sound
 	       case H %On se demande quel est l'élémet de notre liste
 	       of Note|Chord then %Si c'est une liste c'est que c'est un accord (pas d'autre truc qui est une liste)
 		  case Note
 		  of note(name:Name octave:Octave sharp:Boolean duration:Duration instrument:none) then
-		     {F T Acc|H}
-		  else
-		     {F T Acc|{ChordToExtended H}}
+		     {F T H|Acc}
+		  []silence(duration:Duration) then
+		     {F T H|Acc}
+		  else 
+		     {F T {ChordToExtended H}|Acc}
 		  end
 	       [] silence(duration:Duration) then
-		  {F T Acc|H}
+		  {F T H|Acc}
 	       [] note(name:Name octave:Octave sharp:Boolean duration:Duration instrument:none) then
-		  {F T Acc|H}
+		  {F T H|Acc}
 	       []duration(seconds:DurationBis PartitionBis) then
-		  {F T Acc|{SetDuration DurationBis PartitionBis}}
+		  {F T {Append {Reverse {SetDuration DurationBis PartitionBis}} Acc}}
 	       []stretch(factor:FactorBis PartitionBis) then
-		  {F T Acc|{SetStretch FactorBis PartitionBis}}
-	       []drone(note:NoteOrChord amount:Amount) then
-		  {F T Acc|{SetDrone NoteOrChord Amount}}
+		  {F T {Append {Reverse {SetStretch FactorBis PartitionBis}} Acc}}
+	       []drone(note:NoteOrChord amount:Amount) then 
+		  {F T {Append {Reverse {SetDrone NoteOrChord Amount}} Acc}}
 	       []transpose(semitones:Integer PartitionBis) then
-		  {F T Acc|{SetTranspose Integer PartitionBis}}
+		  {F T {Append {Reverse {SetTranspose Integer PartitionBis}} Acc}}
 	       else
-		  {F T Acc|{NoteToExtended H}}
+		  {F T {NoteToExtended H}|Acc}
 	       end
 	    end
 	 end
-	 {F Partition Nil}
+	 {F Partition nil}
       end
    end
   
