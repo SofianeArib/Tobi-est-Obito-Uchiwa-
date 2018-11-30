@@ -453,7 +453,7 @@ end
                                  
  
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    fun{GetHeigth Note}
+     fun{GetHeigth Note}
       local A in
 	 A= {NoteToExtended Note}
 	 case A
@@ -570,7 +570,7 @@ end
       end
    end
 
-  fun{Merge MusicsWithIntensities}   %% prends une liste de musique qui ont chacune une intensité associée renvoie la somme vectorielle pondérée par les intensités
+   fun{Merge MusicsWithIntensities}   %% prends une liste de musique qui ont chacune une intensité associée renvoie la somme vectorielle pondérée par les intensités
       case MusicsWithIntensities of H|T then
 	 case H of Int#Mus then
 	    {BigSum {Multiply {Mix P2T Mus} Int} {Merge T}}
@@ -590,7 +590,21 @@ end
 	 {TailMultiplyList L Factor nil}
       end 
    end
-   
+
+  fun{Repeat Amount Music}
+     local TailRepeat in
+	fun{TailRepeat Amount Music Acc}
+	   if Amount==0 then Acc
+	   else {TailRepeat Amount-1 Music {Mix P2T Music}|Acc}
+	   end
+	end
+	{TailRepeat Amount Music nil}
+     end
+  end
+  
+  
+ 
+     
 	       
    
    
@@ -609,7 +623,7 @@ end
 		  of H2|T2 then
 		     case H2 of X|Y then
 			{TailMix T2 {Append {ChordToSample H2} Acc}}
-		     []note(name:Name octave:Octave sharp:Boolean duration:Duration instrument:none)
+		     []note(name:Name octave:Octave sharp:Boolean duration:Duration instrument:none) then
 			{TailMix T2 {Append {NoteToSample H2} Acc}}
 		     end
 		  end
@@ -617,6 +631,7 @@ end
 		  {Project.load H.1}
 	       []merge(MusicWithIntensities) then
 	       []reverse(Music) then
+		  {Reverse {Mix P2T Music}}
 	       []repeat(amount:Natural Music) then
 	       []loop(seconds:Duration Music) then
 	       []clip(low:Sample1 high:Sample2 Music) then
@@ -646,12 +661,12 @@ in
    
    % Add variables to this list to avoid "local variable used only once"
    % warnings.
-   {ForAll [NoteToExtended Music] Wait}
+   %{ForAll [NoteToExtended Music] Wait}
    
    % Calls your code, prints the result and outputs the result to `out.wav`.
    % You don't need to modify this.
-   {Browse {Project.run Mix PartitionToTimedList Music 'out.wav'}}
+   %{Browse {Project.run Mix PartitionToTimedList Music 'out.wav'}}
    
    % Shows the total time to run your code.
-   {Browse {IntToFloat {Time}-Start} / 1000.0}
+   %{Browse {IntToFloat {Time}-Start} / 1000.0}
 end
