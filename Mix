@@ -1,4 +1,4 @@
-   fun{GetHeigth Note}
+    fun{GetHeigth Note}
       local A in
 	 A= {NoteToExtended Note}
 	 case A
@@ -88,28 +88,27 @@
     fun{NoteToSample Note}
        local TailNoteToSample in           
 	  fun{TailNoteToSample Note Acc1 Acc2}
-	     case Note
+	     case {NoteToExtended Note}
 	     of silence(duration:Duration) then
-		if ({Length Acc1} < Duration*44100) then
-		   {TailNoteToSample Note 0|Acc1 Acc2}
+		if ({IntToFloat{Length Acc1}} < Duration*10.0) then
+		   {TailNoteToSample Note 0.0|Acc1 Acc2}
 	       else
-		  Acc1
+		  {Flatten {Reverse Acc1}}
 	       end
 	    []note(name:Name octave:Octave sharp:Boolean duration:Duration instrument:none) then 
-	       if ({Length Acc1} <Duration*44100) then
-		  {TailNoteToSample Note (0.5*{Sin 2.0*3.14159265359*{GetFrequency Note}*(Acc2/44100.0)})|Acc1 Acc2+(1.0/{IntToFloat Duration})} %% gère le cas ou la duration est un entier quelconque. 
+	       if ({IntToFloat{Length Acc1}} <Duration*10.0) then
+		  {TailNoteToSample Note (0.5*{Sin 2.0*3.14159265359*{GetFrequency Note}*(Acc2/44100.0)})|Acc1 Acc2+(1.0/Duration)} %% gère le cas ou la duration est un entier quelconque. 
 	       else
-		  Acc1
+		  {Flatten {Reverse Acc1}}
 	       end
 	    end
 	 end
-	 {TailNoteToSample Note nil 0.0}
+	 {TailNoteToSample Note nil 0.0} %% voir quepass 
       end
    end
    
    fun{ChordToSample Chord}        %% risque de passer au dessus/dessous des bornes ]~1.0;1.0[ mais on ne doit pas gerer le cas dans le code, juste que ca n'arrive pas dans les exemples 
-      ChordExtended = {ChordToExtended Chord}
-      case ChordExtended
+      case {ChordToExtended Chord}
       of H|T then
 	 {BigSum {NoteToSample H} {ChordToSample T}}
       end
@@ -147,52 +146,78 @@
      end
   end
 
-  fun{
+  fun{Loop Duration Music}
+     local TailLoop TotalLength LengthMusic FreePlace Rest in
+	TotalLength = {IntToFloat Duration*44100.0}
+	LengthMusic = {Length {Mix Music}}
+	FreePlace = TotalLength div LengthMusic
+	Rest = TotalLength mod LengthMusic
+	fun{TailLoop Music Acc}
+	   if Rest ==0 then {Reverse Acc} end
+	else
+	   case {Length Music} of R2|D2 then
+	      {TailLoop D2 H2|Acc}
+	   end
+	end
+	{Append {Repeat FreePlace Music} {TailLoop Music 0.0}}
+     end
+  end
   
   
- 
-     
-	       
+	
+	      
+			  
+	   
+
    
    
    
    fun {Mix P2T Music}
       local TailMix in
-	 fun{TailMix P2T Music FinalList}
+	 fun{TailMix P2T Music Acc}
 	     case Music 
-	    of nil then {Reverse Acc}
-	    [] H|T then
-	       case H
-	       of samples(Samples) then
-		  {TailMix T H|FinalList}
-	       []partition(Partition) then
-		  case {P2T Partition}
-		  of H2|T2 then
-		     case H2 of X|Y then
-			{TailMix T2 {Append {ChordToSample H2} Acc}}
-		     []note(name:Name octave:Octave sharp:Boolean duration:Duration instrument:none) then
-			{TailMix T2 {Append {NoteToSample H2} Acc}}
-		     end
-		  end
-	       []wave(FileName) then  %% à verif 
-		  {Project.load H.1}
-	       []merge(MusicWithIntensities) then
-	       []reverse(Music) then
-		  {Reverse {Mix P2T Music}}
-	       []repeat(amount:Natural Music) then
-		  {Repeat Natural Music}
-	       []loop(seconds:Duration Music) then
-	       []clip(low:Sample1 high:Sample2 Music) then
-	       []echo(delay:Duration decay:Factor Music) then
-	       []fade(start:Duration1 out:Duration2 Music) then
-	       []cut(start:Duration1 finish:Duration2 Music) then
-	       end
-	    end
+	     of nil then {Reverse Acc}
+	     [] H|T then
+		case H
+		of samples(Samples) then
+		   {TailMix P2T T H|Acc}
+		[]partition(Partition) then
+		   case {P2T Partition}
+		   of H2|T2 then
+		      case H2 of X|Y then
+			 {TailMix P2T T2 {Flatten {ChordToSample H2}|Acc}}
+		      []note(name:Name octave:Octave sharp:Boolean duration:Duration instrument:none) then
+			 {TailMix P2T T2 {Append {NoteToSample H2} Acc}}
+		      end
+		   end
+		[]wave(FileName) then  %% à verif 
+		   {Project.load H.1}
+		[]merge(MusicWithIntensities) then
+		[]reverse(Music2) then
+		   {TailMix P2T T {Flatten {Mix P2T Music2}|Acc}}
+		[]repeat(amount:Natural Music) then
+		   {TailMix P2T T {Flatten {Repeat Natural Music}|Acc}}
+		[]loop(seconds:Duration Music) then
+		   {TailMix P2T T {Flatten {Loop Duration Music}|Acc}}
+		[]clip(low:Sample1 high:Sample2 Music) then
+		   
+		[]echo(delay:Duration decay:Factor Music) then
+		   
+		[]fade(start:Duration1 out:Duration2 Music) then
+		   
+		[]cut(start:Duration1 finish:Duration2 Music) then
+		   
+		end
+	     end
 	 end
       end
    end
-
    
+   
+	end
+     end
+  end
+  
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
    
    Music = {Project.load 'joy.dj.oz'}
@@ -201,20 +226,20 @@
    % Uncomment next line to insert your tests.
    % \insert 'tests.oz'
    % !!! Remove this before submitting.
-in
-   Start = {Time}
-   
+	in
+	   Start = {Time}
+	   
    % Uncomment next line to run your tests.
    % {Test Mix PartitionToTimedList}
-   
+	   
    % Add variables to this list to avoid "local variable used only once"
    % warnings.
    %{ForAll [NoteToExtended Music] Wait}
-   
+	   
    % Calls your code, prints the result and outputs the result to `out.wav`.
    % You don't need to modify this.
    %{Browse {Project.run Mix PartitionToTimedList Music 'out.wav'}}
-   
+	   
    % Shows the total time to run your code.
    %{Browse {IntToFloat {Time}-Start} / 1000.0}
-end
+	end
