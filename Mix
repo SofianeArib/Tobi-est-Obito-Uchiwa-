@@ -162,15 +162,24 @@
 	{Append {Repeat FreePlace Music} {TailLoop Music 0.0}}
      end
   end
-  
-  
-	
 	      
-			  
-	   
-
-   
-   
+  fun{Clip Low High Music}
+     local TailClip MixedMusic in
+	MixedMusic = {Mix P2T Music}
+	fun{TailClip Low High MixedMusic Acc}
+	   case MixedMusic of H|T then
+	      if H > High then
+		 {TailClip Low High T High|Acc}
+	      elseif H < Low then
+		 {TailClip Low High T Low|Acc}
+	      else
+		 {TailClip Low High T H|Acc}
+	      end
+	   [] nil then {Reverse Acc} end
+	end
+	{TailClip Low High MixedMusic nil} %% Low et High sont des float 
+     end
+  end	
    
    fun {Mix P2T Music}
       local TailMix in
