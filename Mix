@@ -222,10 +222,31 @@
       end
    end
    
-   
-	end
-     end
-  end
+   fun{Fade Start Out Music}
+      local TailFade DurationEchantillon NbEchStart StartFactor NbEchEnd OutFactor L in
+	 DurationEchantillon = 1.0 %Durée d'un seul échantillon
+	 NbEchStart = Start/DurationEchantillon %Nombre d'échantillons du début
+	 StartFactor = 1.0/NbEchStart %Facteur du début
+	 NbEchEnd = Out/DurationEchantillon %Nombre d'échantillons à la fin
+	 OutFactor = 1.0/NbEchEnd %Facteur de la fin
+	 %Ech = {Mix P2T Music}
+	 L = {IntToFloat {Length Music}}
+	 fun{TailFade NewFactorStart NewFactorEnd Music Acc}
+	    case Music
+	    of nil then {Reverse Acc}
+	    [] H|T then
+	       if (L - {IntToFloat {Length Music}} + 1.0 =< NbEchStart) then
+		  {TailFade NewFactorStart+StartFactor NewFactorEnd T H*NewFactorStart|Acc}
+	       elseif ({IntToFloat {Length Music}} - 1.0 =< NbEchEnd) then
+		  {TailFade NewFactorStart NewFactorEnd-OutFactor T H*NewFactorEnd|Acc}
+	       else
+		  {TailFade NewFactorStart NewFactorEnd T H|Acc}
+	       end
+	    end
+	 end
+	 {TailFade 0.0 1.0 Music nil}
+      end
+   end
   
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
    
